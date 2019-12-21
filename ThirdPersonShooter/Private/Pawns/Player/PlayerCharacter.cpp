@@ -5,19 +5,19 @@
 #include "CoverBoxComponent.h"
 #include "CoverEndComponent.h"
 #include "ElasticArmComponent.h"
-#include "Components/InputComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/InputComponent.h"
+#include "GameFramework/Controller.h"
 
 const FName APlayerCharacter::ElasticArmComponentName = FName(TEXT("ElasticArm"));
 const FName APlayerCharacter::CameraComponentName = FName(TEXT("Camera"));
 
-APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer),
+	bIsRecoilCompensationEnabled(false),
+	InitialControlRotation(FRotator::ZeroRotator),
+	TargetControlRotation(FRotator::ZeroRotator)
 {
-	this->bIsRecoilCompensationEnabled = false;
-	this->InitialControlRotation = FRotator::ZeroRotator;
-	this->TargetControlRotation = FRotator::ZeroRotator;
-
 	this->ElasticArm = this->CreateDefaultSubobject<UElasticArmComponent>(APlayerCharacter::ElasticArmComponentName);
 	this->ElasticArm->SetupAttachment(this->RootComponent);
 	this->ElasticArm->bUsePawnControlRotation = true;
@@ -45,16 +45,16 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 	PlayerInputComponent->BindAxis(this->TurnAxisName, this, &APlayerCharacter::OnTurn);
 	PlayerInputComponent->BindAxis(this->LookUpAxisName, this, &APlayerCharacter::OnLookUp);
 
-	PlayerInputComponent->BindAction(this->AimActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnAim);
+	PlayerInputComponent->BindAction(this->AimActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnAimStart);
 	PlayerInputComponent->BindAction(this->AimActionName, EInputEvent::IE_Released, this, &APlayerCharacter::OnAimStop);
-	PlayerInputComponent->BindAction(this->FireWeaponActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnFireWeapon);
+	PlayerInputComponent->BindAction(this->FireWeaponActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnFireWeaponStart);
 	PlayerInputComponent->BindAction(this->FireWeaponActionName, EInputEvent::IE_Released, this, &APlayerCharacter::OnFireWeaponStop);
 	PlayerInputComponent->BindAction(this->ReloadWeaponActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnReloadWeapon);
 	PlayerInputComponent->BindAction(this->ToggleWalkRunActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnToggleWalkRun);
 	PlayerInputComponent->BindAction(this->ToggleCoverActionName, EInputEvent::IE_Pressed, this, &APlayerCharacter::OnToggleCover);
 }
 
-void APlayerCharacter::FireWeapon()
+void APlayerCharacter::FireWeaponStart()
 {
 	if (!CanFireWeapon())
 	{
@@ -63,7 +63,7 @@ void APlayerCharacter::FireWeapon()
 
 	this->InitialControlRotation = this->GetControlRotation().GetNormalized();
 
-	Super::FireWeapon();
+	Super::FireWeaponStart();
 }
 
 void APlayerCharacter::FireWeaponStop()
@@ -75,14 +75,14 @@ void APlayerCharacter::FireWeaponStop()
 
 	Super::FireWeaponStop();
 
-	FRotator CurrentControlRotation = this->GetControlRotation().GetNormalized();
-	FRotator DeltaRotation = CurrentControlRotation - this->InitialControlRotation;
 	FRotator AccumulatedRecoil = this->GetEquipedWeapon()->GetAccumulatedRecoil();
-	FRotator InputRotation = DeltaRotation - AccumulatedRecoil;
+	const FRotator CurrentControlRotation = this->GetControlRotation().GetNormalized();
+	const FRotator DeltaRotation = CurrentControlRotation - this->InitialControlRotation;
+	const FRotator InputRotation = DeltaRotation - AccumulatedRecoil;
 
 	if (InputRotation.Pitch < 0.0f) // Current < Initial (Rotation opposite to the recoil, negating it).
 	{
-		float DeltaPitch = AccumulatedRecoil.Pitch - FMath::Abs(InputRotation.Pitch); // AccumulatedRecoil.Pitch is always positive.
+		const float DeltaPitch = AccumulatedRecoil.Pitch - FMath::Abs(InputRotation.Pitch); // AccumulatedRecoil.Pitch is always positive.
 		AccumulatedRecoil.Pitch = (DeltaPitch < 0.0f) ? 0.0f : DeltaPitch;
 	}
 
@@ -92,18 +92,22 @@ void APlayerCharacter::FireWeaponStop()
 
 void APlayerCharacter::CompensateRecoil(float DeltaTime)
 {
-	FRotator CurrentControlRotation = this->GetControlRotation();
-	FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, this->TargetControlRotation, DeltaTime, 16.0f);
-	this->GetController()->SetControlRotation(NewControlRotation);
+	const FRotator CurrentControlRotation = this->GetControlRotation();
+	const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, this->TargetControlRotation, DeltaTime, 16.0f);
+
+	AController* Controller = this->GetController();
+	check(Controller);
+
+	Controller->SetControlRotation(NewControlRotation);
 
 	if (TargetControlRotation.Equals(NewControlRotation, 0.1f) || IsFiring())
 	{
 		this->bIsRecoilCompensationEnabled = false;
 	}
 
-	float Threshold = 0.01f;
-	float PitchInput = FMath::Abs(this->GetInputAxisValue(this->LookUpAxisName));
-	float YawInput = FMath::Abs(this->GetInputAxisValue(this->TurnAxisName));
+	const float Threshold = 0.01f;
+	const float PitchInput = FMath::Abs(this->GetInputAxisValue(this->LookUpAxisName));
+	const float YawInput = FMath::Abs(this->GetInputAxisValue(this->TurnAxisName));
 	
 	if (PitchInput > Threshold)
 	{
@@ -112,7 +116,7 @@ void APlayerCharacter::CompensateRecoil(float DeltaTime)
 
 	if (YawInput > Threshold)
 	{
-		FRotator CurrentControlRotation = this->GetControlRotation();
+		const FRotator CurrentControlRotation = this->GetControlRotation();
 		this->TargetControlRotation.Yaw = CurrentControlRotation.Yaw;
 	}
 }
@@ -132,10 +136,10 @@ void APlayerCharacter::OnMoveRight(float AxisValue)
 		
 		if (OverlappingCoverEndVolume)
 		{
-			bool bIsRightEnd = this->OverlappingCoverEndVolume->IsRightEnd();
+			const bool bIsRightEnd = this->OverlappingCoverEndVolume->IsRightEnd();
 
-			bool bShouldMoveLeft = AxisValue < 0.0f;
-			bool bShouldMoveRight = AxisValue > 0.0f;
+			const bool bShouldMoveLeft = AxisValue < 0.0f;
+			const bool bShouldMoveRight = AxisValue > 0.0f;
 
 			bool bCanMoveLeft = false;
 			bool bCanMoveRight = false;
@@ -162,8 +166,8 @@ void APlayerCharacter::OnMoveRight(float AxisValue)
 		YawRotation = FRotator(0.0f, OverlappingCoverVolume->GetComponentRotation().Yaw, 0.0f);
 	}
 
-	FRotationMatrix RotationMatrix = FRotationMatrix(YawRotation);
-	FVector Direction = RotationMatrix.GetUnitAxis(EAxis::Y);
+	const FRotationMatrix RotationMatrix = FRotationMatrix(YawRotation);
+	const FVector Direction = RotationMatrix.GetUnitAxis(EAxis::Y);
 
 	this->AddMovementInput(Direction, AxisValue);
 }
@@ -175,9 +179,9 @@ void APlayerCharacter::OnMoveForward(float AxisValue)
 		return;
 	}
 
-	FRotator ControlYawRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
-	FRotationMatrix RotationMatrix = FRotationMatrix(ControlYawRotation);
-	FVector Direction = RotationMatrix.GetUnitAxis(EAxis::X);
+	const FRotator ControlYawRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
+	const FRotationMatrix RotationMatrix = FRotationMatrix(ControlYawRotation);
+	const FVector Direction = RotationMatrix.GetUnitAxis(EAxis::X);
 
 	this->AddMovementInput(Direction, AxisValue);
 }
@@ -192,10 +196,10 @@ void APlayerCharacter::OnLookUp(float AxisValue)
 	this->AddControllerPitchInput(AxisValue);
 }
 
-void APlayerCharacter::OnAim()
+void APlayerCharacter::OnAimStart()
 {
 	this->ElasticArm->UseMinArmLength();
-	this->Aim();
+	this->AimStart();
 }
 
 void APlayerCharacter::OnAimStop()
@@ -204,9 +208,9 @@ void APlayerCharacter::OnAimStop()
 	this->AimStop();
 }
 
-void APlayerCharacter::OnFireWeapon()
+void APlayerCharacter::OnFireWeaponStart()
 {
-	this->FireWeapon();
+	this->FireWeaponStart();
 }
 
 void APlayerCharacter::OnFireWeaponStop()

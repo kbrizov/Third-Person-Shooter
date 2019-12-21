@@ -32,11 +32,11 @@ public:
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	virtual void Aim();
+	virtual void AimStart();
 
 	virtual void AimStop();
 
-	virtual void FireWeapon();
+	virtual void FireWeaponStart();
 		    
 	virtual void FireWeaponStop();
 
@@ -78,7 +78,13 @@ public:
 
 	bool IsDead() const;
 
+	void OnFireWeapon();
+
+	void OnReloadWeapon();
+
 protected:
+
+	const FName RightHandSocketName = FName(TEXT("Right_Hand"));
 
 	bool bIsWalking;
 	bool bIsRunning;
@@ -90,8 +96,6 @@ protected:
 	bool bIsInCover;
 	UCoverBoxComponent* OverlappingCoverVolume;
 	UCoverEndComponent* OverlappingCoverEndVolume;
-
-	const FName RightHandSocketName = FName(TEXT("Right_Hand"));
 
 	virtual void BeginPlay() override;
 
@@ -138,3 +142,112 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	UChildActorComponent* Weapon;
 };
+
+inline void ABaseCharacter::AimStart()
+{
+	this->bIsAiming = true;
+}
+
+inline void ABaseCharacter::AimStop()
+{
+	this->bIsAiming = false;
+}
+
+inline float ABaseCharacter::GetMaxHealth() const
+{
+	return this->MaxHealth;
+}
+
+inline void ABaseCharacter::SetMaxHealth(float Value)
+{
+	this->MaxHealth = Value < 0.0f ? 0.0f : Value;
+}
+
+inline float ABaseCharacter::GetCurrentHealth() const
+{
+	return this->CurrentHealth;
+}
+
+inline void ABaseCharacter::SetCurrentHealth(float Value)
+{
+	this->CurrentHealth = FMath::Clamp(Value, 0.0f, MaxHealth);
+}
+
+inline float ABaseCharacter::GetCurrentHealthNormalized() const
+{
+	// NormalizedHealth is in [0, 1]
+	// CurrentHealth is in [0, MaxHealth]
+	// The ratio: NormalizedHealth / 1 = CurrentHealth / MaxHealth 
+	float NormalizedHealth = this->CurrentHealth / this->MaxHealth;
+
+	return NormalizedHealth;
+}
+
+inline UCoverBoxComponent* ABaseCharacter::GetOverlappingCoverVolume() const
+{
+	return this->OverlappingCoverVolume;
+}
+
+inline UCoverEndComponent* ABaseCharacter::GetOverlappingCoverEndVolume() const
+{
+	return this->OverlappingCoverEndVolume;
+}
+
+inline bool ABaseCharacter::IsIdle() const
+{
+	bool bIsMoving = this->GetVelocity().SizeSquared() > 0.0f;
+
+	return !bIsMoving;
+}
+
+inline bool ABaseCharacter::IsWalking() const
+{
+	return this->bIsWalking;
+}
+
+inline bool ABaseCharacter::IsRunning() const
+{
+	return this->bIsRunning;
+}
+
+inline bool ABaseCharacter::IsFiring() const
+{
+	return this->bIsFiring;
+}
+
+inline void ABaseCharacter::SetIsFiring(bool bValue)
+{
+	this->bIsFiring = bValue;
+}
+
+inline bool ABaseCharacter::IsReloading() const
+{
+	return this->bIsReloading;
+}
+
+inline void ABaseCharacter::SetIsReloading(bool bValue)
+{
+	this->bIsReloading = bValue;
+}
+
+inline bool ABaseCharacter::IsInCover() const
+{
+	return this->bIsInCover;
+}
+
+inline bool ABaseCharacter::IsDead() const
+{
+	bool bIsAlive = this->CurrentHealth > 0.0f;
+
+	return !bIsAlive;
+}
+
+inline void ABaseCharacter::OnFireWeapon()
+{
+	this->FireWeaponEvent.Broadcast();
+}
+
+inline void ABaseCharacter::OnReloadWeapon()
+{
+	this->ReloadWeaponEvent.Broadcast();
+}

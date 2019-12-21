@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BasePlayerWidget.h"
+#include "PlayerCharacter.h"
 #include "MenuWidget.generated.h"
 
 UCLASS(Abstract)
@@ -16,3 +17,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player")
 	bool IsPlayerDead() const;
 };
+
+inline bool UMenuWidget::IsPlayerDead() const
+{
+	bool bIsPlayerDead = this->GetPlayerCharacter()->IsDead();
+
+	return bIsPlayerDead;
+}

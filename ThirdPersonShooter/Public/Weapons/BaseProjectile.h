@@ -68,3 +68,18 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 };
+
+inline ABaseWeapon* ABaseProjectile::GetWeapon() const
+{
+	return this->Weapon;
+}
+
+inline void ABaseProjectile::SetWeapon(ABaseWeapon* Weapon)
+{
+	this->Weapon = Weapon;
+}
+
+inline UParticleSystem* ABaseProjectile::GetMuzzleFlashParticle() const
+{
+	return this->MuzzleFlashParticle;
+}

@@ -21,14 +21,16 @@ void FCoverState::OnEnter()
 	FBaseCharacterState::OnEnter();
 
 	UCoverBoxComponent* CoverVolume = this->Character->GetOverlappingCoverVolume();
+	check(CoverVolume);
+
 	FRotator CoverRotation = CoverVolume->GetComponentRotation().GetNormalized();
 	this->Character->SetActorRotation(CoverRotation);
 
 	UCoverEndComponent* EndVolume = this->Character->GetOverlappingCoverEndVolume();
-	float ControlYawRotation = this->Character->GetControlRotation().GetNormalized().Yaw;
-	float DeltaYaw = ControlYawRotation - CoverRotation.Yaw;
+	const float ControlYawRotation = this->Character->GetControlRotation().GetNormalized().Yaw;
+	const float DeltaYaw = ControlYawRotation - CoverRotation.Yaw;
 
-	bool bIsFacingRight = EndVolume ? EndVolume->IsRightEnd() : DeltaYaw > 0.0f;
+	const bool bIsFacingRight = EndVolume ? EndVolume->IsRightEnd() : DeltaYaw > 0.0f;
 
 	this->LocomotionComponent->MaxWalkSpeed = this->LocomotionComponent->WalkSpeed;
 	this->LocomotionComponent->bUseControllerDesiredRotation = false;
@@ -36,7 +38,7 @@ void FCoverState::OnEnter()
 	this->LocomotionComponent->SetPlaneConstraintNormal(CoverVolume->GetForwardVector());
 	this->LocomotionComponent->SetPlaneConstraintEnabled(true);
 	this->LocomotionComponent->SnapUpdatedComponentToPlane();
-	this->LocomotionComponent->EnterCoverEvent.Broadcast(bIsFacingRight);
+	this->LocomotionComponent->OnEnterCover(bIsFacingRight);
 }
 
 void FCoverState::OnExit()
@@ -45,7 +47,7 @@ void FCoverState::OnExit()
 
 	this->LocomotionComponent->bUseControllerDesiredRotation = true;
 	this->LocomotionComponent->SetPlaneConstraintEnabled(false);
-	this->LocomotionComponent->ExitCoverEvent.Broadcast();
+	this->LocomotionComponent->OnExitCover();
 }
 
 void FCoverState::Update()

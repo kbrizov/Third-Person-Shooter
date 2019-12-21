@@ -3,10 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseCharacter.h"
 #include "Pawns/Enemies/AI/BaseAIController.h"
 #include "EnemyAIController.generated.h"
-
-class ABaseCharacter;
 
 UCLASS(Abstract)
 class THIRDPERSONSHOOTER_API AEnemyAIController : public ABaseAIController
@@ -16,8 +15,6 @@ class THIRDPERSONSHOOTER_API AEnemyAIController : public ABaseAIController
 public:
 
 	AEnemyAIController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
-
-	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Target")
 	AActor* GetTarget() const;
@@ -32,7 +29,7 @@ public:
 	bool CanSeeTarget() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character")
-	void FireWeapon();
+	void FireWeaponStart();
 
 	UFUNCTION(BlueprintCallable, Category = "Character")
 	void FireWeaponStop();
@@ -53,7 +50,6 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
 	virtual void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override;
 
 private:
@@ -63,3 +59,78 @@ private:
 	FVector LastKnownTargetLocation;
 	ABaseCharacter* ControlledPawn;
 };
+
+inline AActor* AEnemyAIController::GetTarget() const
+{
+	return this->Target;
+}
+
+inline FVector AEnemyAIController::GetLastKnownTargetLocation() const
+{
+	return this->LastKnownTargetLocation;
+}
+
+inline bool AEnemyAIController::HasLostTarget() const
+{
+	return this->bHasLostTarget;
+}
+
+inline void AEnemyAIController::FireWeaponStart()
+{
+	if (ControlledPawn)
+	{
+		this->ControlledPawn->FireWeaponStart();
+	}
+}
+
+inline void AEnemyAIController::FireWeaponStop()
+{
+	if (ControlledPawn)
+	{
+		this->ControlledPawn->FireWeaponStop();
+	}
+}
+
+inline void AEnemyAIController::ReloadWeapon()
+{
+	if (ControlledPawn)
+	{
+		this->ControlledPawn->ReloadWeapon();
+	}
+}
+
+inline bool AEnemyAIController::IsFiring() const
+{
+	bool bIsFiring = false;
+
+	if (ControlledPawn)
+	{
+		bIsFiring = this->ControlledPawn->IsFiring();
+	}
+
+	return bIsFiring;
+}
+
+inline bool AEnemyAIController::IsReloading() const
+{
+	bool bIsReloading = false;
+
+	if (ControlledPawn)
+	{
+		bIsReloading = this->ControlledPawn->IsReloading();
+	}
+
+	return bIsReloading;
+}
+
+inline bool AEnemyAIController::IsDead() const
+{
+	bool bIsDead = false;
+
+	if (ControlledPawn)
+	{
+		bIsDead = this->ControlledPawn->IsDead();
+	}
+
+	return bIsDead;
+}

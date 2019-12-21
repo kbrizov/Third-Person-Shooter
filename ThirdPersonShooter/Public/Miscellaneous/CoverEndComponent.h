@@ -29,3 +29,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Type", meta = (AllowPrivateAccess = "true"))
 	ECoverEndType Type = ECoverEndType::Left;
 };
+
+inline bool UCoverEndComponent::IsRightEnd() const
+{
+	bool bIsRightEnd = (this->Type == ECoverEndType::Right);
+
+	return bIsRightEnd;
+}
+
+inline bool UCoverEndComponent::IsLeftEnd() const
+{
+	bool bIsLeftEnd = !IsRightEnd();
+
+	return bIsLeftEnd;
+}

@@ -34,7 +34,7 @@ void ABaseAIController::SetGenericTeamId(const FGenericTeamId& NewTeamId)
 void ABaseAIController::SetGenericTeamId(ETeam NewTeam)
 {
 	uint8 Id = static_cast<uint8>(NewTeam);
-	Super::SetGenericTeamId(FGenericTeamId(Id));
+	this->SetGenericTeamId(FGenericTeamId(Id));
 }
 
 ETeamAttitude::Type ABaseAIController::GetTeamAttitudeTowards(const AActor& Other) const

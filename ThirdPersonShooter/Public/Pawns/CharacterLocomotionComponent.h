@@ -49,6 +49,10 @@ public:
 
 	void ToPreviousState();
 
+	void OnEnterCover(bool bIsFacingCover);
+
+	void OnExitCover();
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -77,3 +81,13 @@ private:
 
 	void ToState(FBaseCharacterState& State);
 };
+
+inline float UCharacterLocomotionComponent::GetWalkSpeed() const
+{
+	return this->WalkSpeed;
+}
+
+inline float UCharacterLocomotionComponent::GetRunSpeed() const
+{
+	return this->RunSpeed;
+}

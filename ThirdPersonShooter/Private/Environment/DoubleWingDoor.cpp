@@ -11,24 +11,20 @@ const FName ADoubleWingDoor::LeftWingComponentName = FName(TEXT("LeftWing"));
 const FName ADoubleWingDoor::RightWingComponentName = FName(TEXT("RightWing"));
 const FName ADoubleWingDoor::TriggerVolumeComponentName = FName(TEXT("TriggerVolume"));
 
-ADoubleWingDoor::ADoubleWingDoor(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+ADoubleWingDoor::ADoubleWingDoor(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer),
+	bIsOpening(false),
+	bIsClosing(false),
+	LeftWingClosedLocation(FVector::ZeroVector),
+	LeftWingOpenedLocation(FVector::ZeroVector),
+	RightWingClosedLocation(FVector::ZeroVector),
+	RightWingOpenedLocation(FVector::ZeroVector),
+	Alpha(0.025f),
+	WingOffset(160.0f),
+	OpeningSound(nullptr),
+	ClosingSound(nullptr)
 {
 	this->PrimaryActorTick.bCanEverTick = true;
-	this->bIsOpening = false;
-	this->bIsClosing = false;
-
-	this->LeftWingClosedLocation = FVector::ZeroVector;
-	this->LeftWingOpenedLocation = FVector::ZeroVector;
-
-	this->RightWingClosedLocation = FVector::ZeroVector;
-	this->RightWingOpenedLocation = FVector::ZeroVector;
-
-	this->Alpha = 0.025f;
-	this->WingOffset = 160.0f;
-
-	this->OpeningSound = nullptr;
-	this->ClosingSound = nullptr;
 
 	this->Frame = this->CreateDefaultSubobject<UStaticMeshComponent>(ADoubleWingDoor::FrameComponentName);
 	this->RootComponent = this->Frame;
@@ -79,16 +75,16 @@ void ADoubleWingDoor::BeginPlay()
 	checkf(this->LeftWing != nullptr, TEXT("LeftWingComponent is null."));
 	checkf(this->RightWing != nullptr, TEXT("RightWingComponent is null."));
 	
-	FTransform LeftWingTransform = this->LeftWing->GetRelativeTransform();
-	float LeftWingYScale = LeftWingTransform.GetScale3D().Y;
-	float LeftWingDelta = this->WingOffset * LeftWingYScale;
+	const FTransform LeftWingTransform = this->LeftWing->GetRelativeTransform();
+	const float LeftWingYScale = LeftWingTransform.GetScale3D().Y;
+	const float LeftWingDelta = this->WingOffset * LeftWingYScale;
 	this->LeftWingClosedLocation = LeftWingTransform.GetLocation();
 	this->LeftWingOpenedLocation = this->LeftWingClosedLocation;
 	this->LeftWingOpenedLocation.Y = this->LeftWingClosedLocation.Y - LeftWingDelta;
 
-	FTransform RightWingTransform = this->RightWing->GetRelativeTransform();
-	float RightWingYScale = RightWingTransform.GetScale3D().Y;
-	float RightWingDelta = this->WingOffset * RightWingYScale;
+	const FTransform RightWingTransform = this->RightWing->GetRelativeTransform();
+	const float RightWingYScale = RightWingTransform.GetScale3D().Y;
+	const float RightWingDelta = this->WingOffset * RightWingYScale;
 	this->RightWingClosedLocation = RightWingTransform.GetLocation();
 	this->RightWingOpenedLocation = this->RightWingClosedLocation;
 	this->RightWingOpenedLocation.Y = this->RightWingClosedLocation.Y + RightWingDelta;
@@ -135,8 +131,8 @@ void ADoubleWingDoor::SlideDoorWing(UStaticMeshComponent* DoorWing, const FVecto
 {
 	checkf(DoorWing != nullptr, TEXT("DoorWing is null."));
 
-	FVector CurrentWingLocation = DoorWing->GetRelativeTransform().GetLocation();
-	FVector NewWingLocation = FMath::Lerp(CurrentWingLocation, GoalLocation, this->Alpha);
+	const FVector CurrentWingLocation = DoorWing->GetRelativeTransform().GetLocation();
+	const FVector NewWingLocation = FMath::Lerp(CurrentWingLocation, GoalLocation, this->Alpha);
 	DoorWing->SetRelativeLocation(NewWingLocation);
 }
 
@@ -145,13 +141,13 @@ bool ADoubleWingDoor::IsOpen() const
 	checkf(this->LeftWing != nullptr, TEXT("LeftWingComponent is null."));
 	checkf(this->RightWing != nullptr, TEXT("RightWingComponent is null."));
 
-	FVector CurrentLeftWingLocation = this->LeftWing->GetComponentLocation();
-	FVector CurrentRightWingLocation = this->RightWing->GetComponentLocation();
+	const FVector CurrentLeftWingLocation = this->LeftWing->GetComponentLocation();
+	const FVector CurrentRightWingLocation = this->RightWing->GetComponentLocation();
 
-	bool bIsLeftWingOpen = CurrentLeftWingLocation.Equals(this->LeftWingOpenedLocation);
-	bool bIsRightWingOpen = CurrentRightWingLocation.Equals(this->RightWingOpenedLocation);
+	const bool bIsLeftWingOpen = CurrentLeftWingLocation.Equals(this->LeftWingOpenedLocation);
+	const bool bIsRightWingOpen = CurrentRightWingLocation.Equals(this->RightWingOpenedLocation);
 
-	bool bIsOpen = bIsLeftWingOpen && bIsRightWingOpen;
+	const bool bIsOpen = bIsLeftWingOpen && bIsRightWingOpen;
 
 	return bIsOpen;
 }
@@ -161,13 +157,13 @@ bool ADoubleWingDoor::IsClosed() const
 	checkf(this->LeftWing != nullptr, TEXT("LeftWingComponent is null."));
 	checkf(this->RightWing != nullptr, TEXT("RightWingComponent is null."));
 
-	FVector CurrentLeftWingLocation = this->LeftWing->GetComponentLocation();
-	FVector CurrentRightWingLocation = this->RightWing->GetComponentLocation();
+	const FVector CurrentLeftWingLocation = this->LeftWing->GetComponentLocation();
+	const FVector CurrentRightWingLocation = this->RightWing->GetComponentLocation();
 
-	bool bIsLeftWingClosed = CurrentLeftWingLocation.Equals(this->LeftWingClosedLocation);
-	bool bIsRightWingClosed = CurrentRightWingLocation.Equals(this->RightWingClosedLocation);
+	const bool bIsLeftWingClosed = CurrentLeftWingLocation.Equals(this->LeftWingClosedLocation);
+	const bool bIsRightWingClosed = CurrentRightWingLocation.Equals(this->RightWingClosedLocation);
 
-	bool bIsClosed = bIsLeftWingClosed && bIsRightWingClosed;
+	const bool bIsClosed = bIsLeftWingClosed && bIsRightWingClosed;
 
 	return bIsClosed;
 }

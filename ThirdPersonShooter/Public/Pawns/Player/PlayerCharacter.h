@@ -25,7 +25,7 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void FireWeapon() override;
+	virtual void FireWeaponStart() override;
 
 	virtual void FireWeaponStop() override;
 
@@ -62,11 +62,11 @@ private:
 
 	void OnLookUp(float AxisValue);
 
-	void OnAim();
+	void OnAimStart();
 
 	void OnAimStop();
 
-	void OnFireWeapon();
+	void OnFireWeaponStart();
 
 	void OnFireWeaponStop();
 

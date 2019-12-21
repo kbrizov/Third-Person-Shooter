@@ -2,28 +2,14 @@
 
 #include "ElasticArmComponent.h"
 
-UElasticArmComponent::UElasticArmComponent(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UElasticArmComponent::UElasticArmComponent(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer),
+	bShouldUseMinArmLength(false),
+	bShouldUseMaxArmLength(true),
+	MinArmLength(80.0f),
+	MaxArmLength(160.0f),
+	ArmLengthChangeSpeed(20.0f)
 {
-	this->bShouldUseMinArmLength = false;
-	this->bShouldUseMaxArmLength = true;
-
-	this->MinArmLength = 80.0f;
-	this->MaxArmLength = 160.0f;
-
-	this->ArmLengthChangeSpeed = 20.0f;
-}
-
-void UElasticArmComponent::UseMinArmLength()
-{
-	this->bShouldUseMinArmLength = true;
-	this->bShouldUseMaxArmLength = false;
-}
-
-void UElasticArmComponent::UseMaxArmLength()
-{
-	this->bShouldUseMinArmLength = false;
-	this->bShouldUseMaxArmLength = true;
 }
 
 void UElasticArmComponent::UpdateDesiredArmLocation(bool bDoTrace, bool bDoLocationLag, bool bDoRotationLag, float DeltaTime)

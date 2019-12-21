@@ -25,3 +25,8 @@ private:
 
 	APlayerCharacter* PlayerCharacter;
 };
+
+inline APlayerCharacter* UBasePlayerWidget::GetPlayerCharacter() const
+{
+	return this->PlayerCharacter;
+}

@@ -2,17 +2,15 @@
 
 #include "CharacterLocomotionComponent.h"
 
-UCharacterLocomotionComponent::UCharacterLocomotionComponent(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UCharacterLocomotionComponent::UCharacterLocomotionComponent(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer),
+	CurrentState(nullptr),
+	PreviousState(nullptr),
+	WalkSpeed(270.0f),
+	RunSpeed(450.0f),
+	CoverSpeed(230.0f)
 {
 	PrimaryComponentTick.bCanEverTick = true;
-
-	this->CurrentState = nullptr;
-	this->PreviousState = nullptr;
-
-	this->WalkSpeed = 270.0f;
-	this->RunSpeed = 450.0f;
-	this->CoverSpeed = 230.0f;
 }
 
 void UCharacterLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -20,16 +18,6 @@ void UCharacterLocomotionComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	this->CurrentState->Update();
-}
-
-float UCharacterLocomotionComponent::GetWalkSpeed() const
-{
-	return this->WalkSpeed;
-}
-
-float UCharacterLocomotionComponent::GetRunSpeed() const
-{
-	return this->RunSpeed;
 }
 
 void UCharacterLocomotionComponent::ToCoverState()
@@ -55,6 +43,16 @@ void UCharacterLocomotionComponent::ToRunState()
 void UCharacterLocomotionComponent::ToPreviousState()
 {
 	this->ToState(*PreviousState);
+}
+
+void UCharacterLocomotionComponent::OnEnterCover(bool bIsFacingCover)
+{
+	this->EnterCoverEvent.Broadcast(bIsFacingCover);
+}
+
+void UCharacterLocomotionComponent::OnExitCover()
+{
+	this->ExitCoverEvent.Broadcast();
 }
 
 void UCharacterLocomotionComponent::BeginPlay()

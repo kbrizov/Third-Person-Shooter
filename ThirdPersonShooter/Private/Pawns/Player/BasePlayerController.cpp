@@ -9,14 +9,13 @@
 #include "PlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
-ABasePlayerController::ABasePlayerController()
+ABasePlayerController::ABasePlayerController() :
+	bIsMenuDisplayed(false),
+	MenuWidget(nullptr),
+	HealthWidget(nullptr),
+	WeaponWidget(nullptr),
+	CrosshairWidget(nullptr)
 {
-	this->bIsMenuDisplayed = false;
-	this->MenuWidget = nullptr;
-	this->HealthWidget = nullptr;
-	this->WeaponWidget = nullptr;
-	this->CrosshairWidget = nullptr;
-
 	this->SetTeam(ETeam::Player);
 }
 
@@ -47,7 +46,7 @@ void ABasePlayerController::HideMenu()
 	UGameplayStatics::SetGamePaused(this, false);
 	this->bIsMenuDisplayed = false;
 	this->bShowMouseCursor = false;
-	MenuWidget->SetVisibility(ESlateVisibility::Hidden);
+	this->MenuWidget->SetVisibility(ESlateVisibility::Hidden);
 
 	FInputModeGameOnly InputMode = FInputModeGameOnly();
 	this->SetInputMode(InputMode);

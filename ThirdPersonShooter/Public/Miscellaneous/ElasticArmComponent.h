@@ -40,3 +40,15 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true", ClampMin = "0", UIMin = "0"))
 	float ArmLengthChangeSpeed;
 };
+
+inline void UElasticArmComponent::UseMinArmLength()
+{
+	this->bShouldUseMinArmLength = true;
+	this->bShouldUseMaxArmLength = false;
+}
+
+inline void UElasticArmComponent::UseMaxArmLength()
+{
+	this->bShouldUseMinArmLength = false;
+	this->bShouldUseMaxArmLength = true;
+}

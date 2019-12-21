@@ -9,11 +9,10 @@
 const FName ABaseWeapon::WeaponTraceTag = FName(TEXT("WeaponTrace"));
 const FName ABaseWeapon::MeshComponentName = FName(TEXT("Mesh"));
 
-ABaseWeapon::ABaseWeapon(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+ABaseWeapon::ABaseWeapon(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer),
+	AccumulatedRecoil(FRotator::ZeroRotator)
 {
-	this->AccumulatedRecoil = FRotator::ZeroRotator;
-
 	this->SetUser(nullptr); // The weapon is not equiped.
 	this->SetRange(50.0f); // Range of 50m (5000cm).
 	this->SetRecoil(1.0f);
@@ -44,98 +43,7 @@ void ABaseWeapon::Reload(int32 AmountOfAmmunition)
 
 	this->SetRemainingAmmunition(AmountOfAmmunition);
 	this->ReloadEvent.Broadcast();
-	this->User->ReloadWeaponEvent.Broadcast();
-}
-
-FRotator ABaseWeapon::GetAccumulatedRecoil() const
-{
-	return this->AccumulatedRecoil;
-}
-
-USkeletalMeshComponent* ABaseWeapon::GetMesh() const
-{
-	return this->Mesh;
-}
-
-ABaseCharacter* ABaseWeapon::GetUser() const
-{
-	return this->User;
-}
-
-void ABaseWeapon::SetUser(ABaseCharacter* User)
-{
-	this->User = User;
-}
-
-float ABaseWeapon::GetRange() const
-{
-	return this->Range;
-}
-
-void ABaseWeapon::SetRange(float Value)
-{
-	this->Range = Value < 0.0f ? 0.0f : Value;
-}
-
-float ABaseWeapon::GetRecoil() const
-{
-	return this->Recoil;
-}
-
-void ABaseWeapon::SetRecoil(float Value)
-{
-	this->Recoil = FMath::Clamp(Value, 0.0f, 90.0f);
-}
-
-float ABaseWeapon::GetSpread() const
-{
-	return this->Spread;
-}
-
-void ABaseWeapon::SetSpread(float Value)
-{
-	this->Spread = FMath::Clamp(Value, 0.0f, 90.0f);
-}
-
-int32 ABaseWeapon::GetMagazineCapacity() const
-{
-	return this->Magazine.Capacity;
-}
-
-void ABaseWeapon::SetMagazineCapacity(int32 Value)
-{
-	this->Magazine.Capacity = Value < 0.0f ? 0.0f : Value;
-}
-
-int32 ABaseWeapon::GetRemainingAmmunition() const
-{
-	return this->Magazine.RemainingAmmunition;
-}
-
-void ABaseWeapon::SetRemainingAmmunition(int32 Value)
-{
-	this->Magazine.RemainingAmmunition = FMath::Clamp(Value, 0, this->Magazine.Capacity);
-}
-
-bool ABaseWeapon::IsLoaded() const
-{
-	bool bIsLoaded = (this->Magazine.RemainingAmmunition > 0);
-
-	return bIsLoaded;
-}
-
-bool ABaseWeapon::IsMagazineFull() const
-{
-	bool bIsMagazineFull = (this->Magazine.RemainingAmmunition == this->Magazine.Capacity);
-
-	return bIsMagazineFull;
-}
-
-bool ABaseWeapon::IsEquiped() const
-{
-	bool bIsEquiped = (this->User != nullptr);
-
-	return bIsEquiped;
+	this->User->OnReloadWeapon();
 }
 
 void ABaseWeapon::Fire()
@@ -160,7 +68,7 @@ void ABaseWeapon::Fire()
 	FCollisionQueryParams QueryParams;
 	QueryParams.TraceTag = this->WeaponTraceTag;
 	QueryParams.AddIgnoredActor(this->User);
-	bool bHasTraceCollided = World->LineTraceSingleByChannel(OutHitResult, RayStart, RayEnd, WeaponCollisionChannel, QueryParams);
+	const bool bHasTraceCollided = World->LineTraceSingleByChannel(OutHitResult, RayStart, RayEnd, WeaponCollisionChannel, QueryParams);
 
 	const FVector TargetLocation = bHasTraceCollided ? OutHitResult.Location : RayEnd;
 	const FVector MuzzleLocation = this->Mesh->GetSocketLocation(this->MuzzleSocketName);
@@ -184,19 +92,19 @@ void ABaseWeapon::Fire()
 
 	this->Magazine.RemainingAmmunition--;
 	this->FireEvent.Broadcast();
-	this->User->FireWeaponEvent.Broadcast();
+	this->User->OnFireWeapon();
 }
 
 void ABaseWeapon::AddRecoil()
 {
-	float HalfRecoil = this->Recoil / 2.0f;
-	float RandomPitchRecoil = FMath::RandRange(HalfRecoil, Recoil);
-	float RandomYawRecoil = FMath::RandRange(-HalfRecoil, HalfRecoil);
+	const float HalfRecoil = this->Recoil / 2.0f;
+	const float RandomPitchRecoil = FMath::RandRange(HalfRecoil, Recoil);
+	const float RandomYawRecoil = FMath::RandRange(-HalfRecoil, HalfRecoil);
 
-	FRotator RecoilToAdd = FRotator(RandomPitchRecoil, RandomYawRecoil, 0.0f);
+	const FRotator RecoilToAdd = FRotator(RandomPitchRecoil, RandomYawRecoil, 0.0f);
 	this->AccumulatedRecoil += RecoilToAdd;
 
-	FRotator CurrentControlRotation = this->User->GetControlRotation();
-	FRotator RotationAfterRecoil = (CurrentControlRotation + RecoilToAdd).GetNormalized();
+	const FRotator CurrentControlRotation = this->User->GetControlRotation();
+	const FRotator RotationAfterRecoil = (CurrentControlRotation + RecoilToAdd).GetNormalized();
 	this->User->GetController()->SetControlRotation(RotationAfterRecoil);
 }

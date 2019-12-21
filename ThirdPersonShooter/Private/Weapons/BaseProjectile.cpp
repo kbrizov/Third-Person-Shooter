@@ -13,13 +13,14 @@ const FName ABaseProjectile::CollisionComponentName = FName(TEXT("Root"));
 const FName ABaseProjectile::ParticleSystemComponentName = FName(TEXT("ParticleSystem"));
 const FName ABaseProjectile::ProjectileMovementComponentName = FName(TEXT("ProjectileMovement"));
 
-ABaseProjectile::ABaseProjectile(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+ABaseProjectile::ABaseProjectile(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer),
+	Damage(100.0f),
+	ImpulseForce(8000.0f)
 {
-	this->Damage = 100.0f;
-	this->ImpulseForce = 8000.0f;
 	this->InitialLifeSpan = 3.0f;
-	this->bCanBeDamaged = false;
+
+	this->SetCanBeDamaged(false);
 
 	this->CollisionComponent = this->CreateDefaultSubobject<USphereComponent>(ABaseProjectile::CollisionComponentName);
 	this->RootComponent = this->CollisionComponent;
@@ -29,21 +30,6 @@ ABaseProjectile::ABaseProjectile(const FObjectInitializer& ObjectInitializer)
 
 	this->ProjectileMovement = this->CreateDefaultSubobject<UProjectileMovementComponent>(ABaseProjectile::ProjectileMovementComponentName);
 	this->ProjectileMovement->UpdatedComponent = this->RootComponent;
-}
-
-ABaseWeapon* ABaseProjectile::GetWeapon() const
-{
-	return this->Weapon;
-}
-
-void ABaseProjectile::SetWeapon(ABaseWeapon* Weapon)
-{
-	this->Weapon = Weapon;
-}
-
-UParticleSystem* ABaseProjectile::GetMuzzleFlashParticle() const
-{
-	return this->MuzzleFlashParticle;
 }
 
 void ABaseProjectile::BeginPlay()
@@ -57,7 +43,7 @@ void ABaseProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor*
 {
 	UWorld* World = this->GetWorld();
 
-	if (OtherActor->bCanBeDamaged)
+	if (OtherActor->CanBeDamaged())
 	{
 		FPointDamageEvent DamageEvent = FPointDamageEvent();
 		ABaseCharacter* WeaponUser = this->Weapon->GetUser();

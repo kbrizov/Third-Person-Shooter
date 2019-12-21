@@ -63,10 +63,10 @@ void FIdleState::UpdateControllerDesiredRotation()
 
 	if (!ControlForward.Equals(ActorForward))
 	{
-		float DotProduct = FVector::DotProduct(ControlForward, ActorForward);
-		float AngleInDegrees = FMath::RadiansToDegrees(FMath::Acos(DotProduct));
+		const float DotProduct = FVector::DotProduct(ControlForward, ActorForward);
+		const float AngleInDegrees = FMath::RadiansToDegrees(FMath::Acos(DotProduct));
 
-		if (AngleInDegrees > 90.0f)
+		if (90.0f < AngleInDegrees)
 		{
 			this->LocomotionComponent->bUseControllerDesiredRotation = true;
 		}

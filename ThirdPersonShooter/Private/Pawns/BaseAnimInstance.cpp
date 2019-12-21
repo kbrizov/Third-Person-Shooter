@@ -16,6 +16,7 @@ void UBaseAnimInstance::NativeInitializeAnimation()
 		this->Character->ReloadWeaponEvent.AddUFunction(this, "OnReloadWeapon");
 
 		UCharacterLocomotionComponent* LocomotionComponent = Cast<UCharacterLocomotionComponent>(this->Character->GetCharacterMovement());
+		check(LocomotionComponent);
 
 		LocomotionComponent->EnterCoverEvent.AddUFunction(this, "OnEnterCover");
 		LocomotionComponent->ExitCoverEvent.AddUFunction(this, "OnExitCover");
@@ -54,9 +55,9 @@ void UBaseAnimInstance::OnExitCover()
 
 void UBaseAnimInstance::UpdateMovementVariables()
 {
-	FVector WorldSpaceVelocity = this->Character->GetVelocity();
-	FVector LocalSpaceVelocity = this->Character->GetActorTransform().InverseTransformVector(WorldSpaceVelocity);
-	float MaxSpeed = Cast<UCharacterLocomotionComponent>(this->Character->GetCharacterMovement())->GetRunSpeed();
+	const FVector WorldSpaceVelocity = this->Character->GetVelocity();
+	const FVector LocalSpaceVelocity = this->Character->GetActorTransform().InverseTransformVector(WorldSpaceVelocity);
+	const float MaxSpeed = Cast<UCharacterLocomotionComponent>(this->Character->GetCharacterMovement())->GetRunSpeed();
 
 	const FVector2D InputRange = FVector2D(-MaxSpeed, MaxSpeed);
 	const FVector2D OutputRange = FVector2D(-1.0f, 1.0f);
@@ -67,11 +68,9 @@ void UBaseAnimInstance::UpdateMovementVariables()
 
 void UBaseAnimInstance::UpdateLookAngles(float DeltaTime)
 {
-	FRotator ControlRotation = this->Character->GetControlRotation();
-	FRotator ActorRotation = this->Character->GetActorRotation();
-
-	FRotator DeltaRotation = ControlRotation - ActorRotation;
-	DeltaRotation.Normalize();
+	const FRotator ControlRotation = this->Character->GetControlRotation();
+	const FRotator ActorRotation = this->Character->GetActorRotation();
+	const FRotator DeltaRotation = (ControlRotation - ActorRotation).GetNormalized();
 
 	FRotator CurrentRotation = FRotator(LookPitchAngle, LookYawAngle, 0.0f);
 	CurrentRotation = FMath::RInterpTo(CurrentRotation, DeltaRotation, DeltaTime, AimOffsetInterpolationSpeed);
@@ -82,13 +81,11 @@ void UBaseAnimInstance::UpdateLookAngles(float DeltaTime)
 
 void UBaseAnimInstance::UpdateTurnVariables()
 {
-	FRotator ActorRotation = this->Character->GetActorRotation();
-
-	FRotator DeltaRotation = ActorRotation - PreviousActorRotation;
-	DeltaRotation.Normalize();
+	const FRotator ActorRotation = this->Character->GetActorRotation();
+	const FRotator DeltaRotation = (ActorRotation - PreviousActorRotation).GetNormalized();
 
 	PreviousActorRotation = ActorRotation;
-	bool bIsIdle = Character->IsIdle();
+	const bool bIsIdle = Character->IsIdle();
 
 	// TODO: Maybe event based so it's not changed every frame?
 	if (DeltaRotation.Yaw > 0.0f && bIsIdle)

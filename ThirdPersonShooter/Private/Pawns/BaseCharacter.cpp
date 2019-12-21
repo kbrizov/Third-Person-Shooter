@@ -7,25 +7,25 @@
 #include "CharacterLocomotionComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Gameframework/Controller.h"
 
 const FName ABaseCharacter::FocalPointComponentName = FName(TEXT("FocalPoint"));
 const FName ABaseCharacter::WeaponComponentName = FName(TEXT("WeaponActor"));
 
-ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCharacterLocomotionComponent>(ACharacter::CharacterMovementComponentName))
+ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : 
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UCharacterLocomotionComponent>(ACharacter::CharacterMovementComponentName)),
+	bIsWalking(false),
+	bIsRunning(true), // Starts in running mode by default (Uses run movement speed).
+	bIsFiring(false),
+	bIsReloading(false),
+	bIsInCover(false),
+	OverlappingCoverVolume(nullptr)
 {
-	this->bIsWalking = false;
-	this->bIsRunning = true; // Starts in running mode by default (Uses run movement speed).
-	this->bIsFiring = false;
-	this->bIsReloading = false;
-	this->bIsInCover = false;
-	this->OverlappingCoverVolume = nullptr;
 	this->SetMaxHealth(1000.0f);
 	this->SetCurrentHealth(this->MaxHealth);
 
-	USkeletalMeshComponent* MeshComponent = this->GetMesh();
 	this->FocalPoint = this->CreateDefaultSubobject<USceneComponent>(ABaseCharacter::FocalPointComponentName);
-	this->FocalPoint->SetupAttachment(MeshComponent);
+	this->FocalPoint->SetupAttachment(this->GetMesh());
 	this->FocalPoint->SetRelativeLocation(FVector(0.0f, 0.0f, 125.0f));
 
 	this->Weapon = this->CreateDefaultSubobject<UChildActorComponent>(ABaseCharacter::WeaponComponentName);
@@ -35,12 +35,12 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer)
 float ABaseCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-	UE_LOG(LogTemp, Warning, TEXT("I'm taking %f damage!"), Damage);
+	//UE_LOG(LogTemp, Warning, TEXT("I'm taking %f damage!"), Damage);
 	
-	float NewHealth = CurrentHealth - Damage;
+	const float NewHealth = CurrentHealth - Damage;
 	this->SetCurrentHealth(NewHealth);
 
-	if (FMath::IsNearlyZero(NewHealth))
+	if (NewHealth < 0.0f || FMath::IsNearlyZero(NewHealth))
 	{
 		this->Die();
 	}
@@ -48,25 +48,18 @@ float ABaseCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damage
 	return Damage;
 }
 
-void ABaseCharacter::Aim()
-{
-	this->bIsAiming = true;
-}
-
-void ABaseCharacter::AimStop()
-{
-	this->bIsAiming = false;
-}
-
-void ABaseCharacter::FireWeapon()
+void ABaseCharacter::FireWeaponStart()
 {
 	if (!CanFireWeapon())
 	{
 		return;
 	}
-
+	
+	ABaseWeapon* EquipedWeapon = this->GetEquipedWeapon();
+	check(EquipedWeapon);
+	
+	EquipedWeapon->StartFire();
 	this->bIsFiring = true;
-	this->GetEquipedWeapon()->StartFire();
 }
 
 void ABaseCharacter::FireWeaponStop()
@@ -76,8 +69,11 @@ void ABaseCharacter::FireWeaponStop()
 		return;
 	}
 
+	ABaseWeapon* equipedWeapon = this->GetEquipedWeapon();
+	check(equipedWeapon);
+
+	equipedWeapon->StopFire();
 	this->bIsFiring = false;
-	this->GetEquipedWeapon()->StopFire();
 }
 
 void ABaseCharacter::ReloadWeapon()
@@ -90,6 +86,8 @@ void ABaseCharacter::ReloadWeapon()
 	// TODO: Calculate reload variables. (How much ammo we have, how much ammo must be reloaded etc.)
 	// Temporary solution below (Infinite ammo):
 	ABaseWeapon* EquipedWeapon = this->GetEquipedWeapon();
+	check(EquipedWeapon);
+
 	EquipedWeapon->Reload(EquipedWeapon->GetMagazineCapacity());
 }
 
@@ -133,103 +131,17 @@ ABaseWeapon* ABaseCharacter::GetEquipedWeapon() const
 
 void ABaseCharacter::EquipWeapon(ABaseWeapon* NewWeapon)
 {
-	checkf(NewWeapon != nullptr, TEXT("Weapon is null."));
+	check(NewWeapon);
 
 	this->Weapon->SetChildActorClass(NewWeapon->GetClass());
+
 	ABaseWeapon* Weapon = Cast<ABaseWeapon>(this->Weapon->GetChildActor());
+	check(Weapon);
+
 	Weapon->SetUser(this);
 
 	// SetChildActorClass creates a copy of the NewWeapon, so it's not needed anymore.
-	Destroy(NewWeapon);
-}
-
-float ABaseCharacter::GetMaxHealth() const
-{
-	return this->MaxHealth;
-}
-
-void ABaseCharacter::SetMaxHealth(float Value)
-{
-	this->MaxHealth = Value < 0.0f ? 0.0f : Value;
-}
-
-float ABaseCharacter::GetCurrentHealth() const
-{
-	return this->CurrentHealth;
-}
-
-void ABaseCharacter::SetCurrentHealth(float Value)
-{
-	this->CurrentHealth = FMath::Clamp(Value, 0.0f, MaxHealth);
-}
-
-float ABaseCharacter::GetCurrentHealthNormalized() const
-{
-	// NormalizedHealth is in [0, 1]
-	// CurrentHealth is in [0, MaxHealth]
-	// The ratio: NormalizedHealth / 1 = CurrentHealth / MaxHealth 
-	float NormalizedHealth = this->CurrentHealth / this->MaxHealth;
-
-	return NormalizedHealth;
-}
-
-UCoverBoxComponent* ABaseCharacter::GetOverlappingCoverVolume() const
-{
-	return this->OverlappingCoverVolume;
-}
-
-UCoverEndComponent* ABaseCharacter::GetOverlappingCoverEndVolume() const
-{
-	return this->OverlappingCoverEndVolume;
-}
-
-bool ABaseCharacter::IsIdle() const
-{
-	bool bIsMoving = this->GetVelocity().SizeSquared() > 0.0f;
-
-	return !bIsMoving;
-}
-
-bool ABaseCharacter::IsWalking() const
-{
-	return this->bIsWalking;
-}
-
-bool ABaseCharacter::IsRunning() const
-{
-	return this->bIsRunning;
-}
-
-bool ABaseCharacter::IsFiring() const
-{
-	return this->bIsFiring;
-}
-
-void ABaseCharacter::SetIsFiring(bool bValue)
-{
-	this->bIsFiring = bValue;
-}
-
-bool ABaseCharacter::IsReloading() const
-{
-	return this->bIsReloading;
-}
-
-void ABaseCharacter::SetIsReloading(bool bValue)
-{
-	this->bIsReloading = bValue;
-}
-
-bool ABaseCharacter::IsInCover() const
-{
-	return this->bIsInCover;
-}
-
-bool ABaseCharacter::IsDead() const
-{
-	bool bIsAlive = this->CurrentHealth > 0.0f;
-
-	return !bIsAlive;
+	NewWeapon->Destroy();
 }
 
 void ABaseCharacter::BeginPlay()
@@ -283,9 +195,9 @@ bool ABaseCharacter::IsFacingCover() const
 
 	if (OverlappingCoverVolume)
 	{
-		FVector ControlForward = this->GetControlRotation().Vector();
-		FVector CoverVolumeForward = this->OverlappingCoverVolume->GetForwardVector();
-		float DotProduct = FVector::DotProduct(ControlForward, CoverVolumeForward);
+		const FVector ControlForward = this->GetControlRotation().Vector();
+		const FVector CoverVolumeForward = this->OverlappingCoverVolume->GetForwardVector();
+		const float DotProduct = FVector::DotProduct(ControlForward, CoverVolumeForward);
 
 		bIsFacingCover = DotProduct > 0.0f;
 	}
@@ -295,19 +207,19 @@ bool ABaseCharacter::IsFacingCover() const
 
 bool ABaseCharacter::CanTakeCover() const
 {
-	bool bIsInCoverVolume = this->OverlappingCoverVolume != nullptr;
-	bool bIsFacingCover = this->IsFacingCover();
+	const bool bIsInCoverVolume = this->OverlappingCoverVolume != nullptr;
+	const bool bIsFacingCover = this->IsFacingCover();
 
-	bool bCanTakeCover = bIsInCoverVolume && bIsFacingCover && !bIsFiring && !bIsReloading;
+	const bool bCanTakeCover = bIsInCoverVolume && bIsFacingCover && !bIsFiring && !bIsReloading;
 
 	return bCanTakeCover;
 }
 
 bool ABaseCharacter::CanExitCover() const
 {
-	bool bIsInCoverVolume = this->OverlappingCoverVolume != nullptr;
+	const bool bIsInCoverVolume = this->OverlappingCoverVolume != nullptr;
 
-	bool bCanExitCover = bIsInCoverVolume && !bIsFiring && !bIsReloading;
+	const bool bCanExitCover = bIsInCoverVolume && !bIsFiring && !bIsReloading;
 
 	return bCanExitCover;
 }
@@ -394,4 +306,3 @@ void ABaseCharacter::OnCoverEndVolumeEndOverlap(UPrimitiveComponent* OverlappedC
 
 	this->OverlappingCoverEndVolume = nullptr;
 }
-

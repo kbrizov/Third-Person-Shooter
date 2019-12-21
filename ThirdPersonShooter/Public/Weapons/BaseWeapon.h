@@ -124,3 +124,98 @@ private:
 
 	void AddRecoil();
 };
+
+inline FRotator ABaseWeapon::GetAccumulatedRecoil() const
+{
+	return this->AccumulatedRecoil;
+}
+
+inline USkeletalMeshComponent* ABaseWeapon::GetMesh() const
+{
+	return this->Mesh;
+}
+
+inline ABaseCharacter* ABaseWeapon::GetUser() const
+{
+	return this->User;
+}
+
+inline void ABaseWeapon::SetUser(ABaseCharacter* User)
+{
+	this->User = User;
+}
+
+inline float ABaseWeapon::GetRange() const
+{
+	return this->Range;
+}
+
+inline void ABaseWeapon::SetRange(float Value)
+{
+	check(0.0f <= Value);
+	this->Range = Value;
+}
+
+inline float ABaseWeapon::GetRecoil() const
+{
+	return this->Recoil;
+}
+
+inline void ABaseWeapon::SetRecoil(float Value)
+{
+	check(0.0f <= Value && Value <= 90.0f);
+	this->Recoil = Value;
+}
+
+inline float ABaseWeapon::GetSpread() const
+{
+	return this->Spread;
+}
+
+inline void ABaseWeapon::SetSpread(float Value)
+{
+	check(0.0f <= Value && Value <= 90.0f);
+	this->Spread = Value;
+}
+
+inline int32 ABaseWeapon::GetMagazineCapacity() const
+{
+	return this->Magazine.Capacity;
+}
+
+inline void ABaseWeapon::SetMagazineCapacity(int32 Value)
+{
+	check(0.0f <= Value);
+	this->Magazine.Capacity = Value;
+}
+
+inline int32 ABaseWeapon::GetRemainingAmmunition() const
+{
+	return this->Magazine.RemainingAmmunition;
+}
+
+inline void ABaseWeapon::SetRemainingAmmunition(int32 Value)
+{
+	this->Magazine.RemainingAmmunition = FMath::Clamp(Value, 0, this->Magazine.Capacity);
+}
+
+inline bool ABaseWeapon::IsLoaded() const
+{
+	bool bIsLoaded = (this->Magazine.RemainingAmmunition > 0);
+
+	return bIsLoaded;
+}
+
+inline bool ABaseWeapon::IsMagazineFull() const
+{
+	bool bIsMagazineFull = (this->Magazine.RemainingAmmunition == this->Magazine.Capacity);
+
+	return bIsMagazineFull;
+}
+
+inline bool ABaseWeapon::IsEquiped() const
+{
+	bool bIsEquiped = (this->User != nullptr);
+
+	return bIsEquiped;
+}
